@@ -11,7 +11,7 @@ CELL_DATA_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-sa
 
 # The directory of data already loaded from parallel_data_loading.py
 # LOADED_CELL_DATA_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data_2022-05-24_08-40-28"
-LOADED_CELL_DATA_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data_2022-08-07_17-00-12"
+LOADED_CELL_DATA_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data_2022-08-07_18-04-51"
 
 # Where saccade-classified cell data will be saved
 CLASSIFIED_CELLS_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/classified_cells_boot"

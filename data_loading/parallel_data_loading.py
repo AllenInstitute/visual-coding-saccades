@@ -162,6 +162,7 @@ def job(boc, ophys_exp):
                 "session_type": ophys_exp["session_type"],
                 "cre_line": cre.get_full_cre_name(),
                 "cre_abbrev": str(cre),
+                "targeted_structure": ophys_exp["targeted_structure"],
             },
             "metadata": ophys_experiment_data.get_metadata(),
             "time_taken": time.time() - start_time,
