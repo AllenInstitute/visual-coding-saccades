@@ -16,7 +16,7 @@ This project was developed in Python 3.7.10 using [AllenSDK](https://allensdk.re
     cd visual-coding-saccades
     ```
 
-3.  Create a Conda environment with Python 3.6 .
+3.  Create a Conda environment with Python 3.7.10.
     ```bash
     conda create -n visual-coding-saccades python=3.7.10
     ```
