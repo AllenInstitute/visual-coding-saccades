@@ -23,13 +23,20 @@ This project was developed in Python 3.7.10 using [AllenSDK](https://allensdk.re
 
 4.  Now activate the Conda environment. You will need to activate the Conda environment in each terminal in which you want to run code from this repo.
     ```bash
-    source activate visual-coding-saccades
+    conda activate visual-coding-saccades
     ```
 
 5.  Install the required dependencies.
     ```bash
     pip install -r requirements.txt
     ```
+
+Congratulations! You should now have the right Python version; you can confirm with:
+
+```bash
+(visual-coding-saccades) % python -V
+Python 3.7.10
+```
 
 ## Getting Started
 
