@@ -2,8 +2,9 @@
 *Primary Author: [Chase King](https://chaseking.me)*
 
 ## Development To-Do:
-- [ ] Integrate eye tracking into the AllenSDK.
-- [ ] Test `identify_responding_cells_across_sessions.py`.
+1. [ ] Integrate eye tracking into the AllenSDK.
+2. [ ] Delete `eye_tracking/local_eye_data_repository.py` (part of legacy eye tracking).
+3. [ ] Test `identify_responding_cells_across_sessions.py`.
 
 ## Installation
 This project was developed in Python 3.7.10 using [AllenSDK](https://allensdk.readthedocs.io/en/latest/) version 2.12.3. [Conda](https://conda.io/) will set up a virtual environment with the exact version of Python used for development along with all the dependencies needed to run the code.
