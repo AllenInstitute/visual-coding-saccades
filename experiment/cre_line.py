@@ -7,7 +7,7 @@ class CreLine():
         self.cre_abbrev = cre[:cre.index("-")] if cre_abbrev is None else cre_abbrev
         self.reporter = reporter
         self.reporter_extra = reporter_extra
-        self.abbrev = f"{self.cre_abbrev}; {self.reporter}" if abbrev is None else abbrev
+        self.abbrev = f"{self.cre_abbrev};{self.reporter}" if abbrev is None else abbrev
         self.layers = layers
         self.is_excitatory = is_excitatory
         self.color = color

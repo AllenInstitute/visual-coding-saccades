@@ -14,6 +14,7 @@ from experiment.cre_line import match_cre_line
 
 from saccade_config import *
 
+
 def get_all_cell_diffs(dff, cell_indices, frame, slice_after, slice_before):
     frames_after = slice(frame+slice_after.start, frame+slice_after.stop)
     frames_before = slice(frame+slice_before.start, frame+slice_before.stop)

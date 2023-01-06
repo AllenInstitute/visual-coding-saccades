@@ -6,6 +6,9 @@ BRAIN_OBSERVATORY_CACHE_DRIVE_PATH = r"/Users/chase/Desktop/MindScope/visual-cod
 # Manifest file for the Brain Observatory cache (do not edit)
 BRAIN_OBSERVATORY_CACHE_MANIFEST_FILE = path.join(BRAIN_OBSERVATORY_CACHE_DRIVE_PATH, "manifest.json")
 
+# Where the eye tracking data files are stored locally
+EYE_DATA_PATH = r"/Users/chase/Desktop/MindScope/eye_data"
+
 # Where the experiment data (loaded from parallel_data_loading.py) will be saved
 CELL_DATA_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data"
 
@@ -20,7 +23,8 @@ CLASSIFIED_CELLS_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-co
 LOADED_CLASSIFIED_CELLS_CSV = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/classified_cells_boot_2022-05-30_17-41-16/cells.csv"
 
 # Base directory for saved figures
-FIGURE_BASE_DIR = r"/Users/chase/Desktop/saccade_paper_figures"
+# FIGURE_BASE_DIR = r"/Users/chase/Desktop/saccade_paper_figures"
+FIGURE_BASE_DIR = r"/Users/chase/Library/CloudStorage/OneDrive-AllenInstitute/Manuscripts/Saccade Analysis Brain Observatory/saccade_paper_figures"
 
 # Parameters for saccade loading
 SACCADE_NAN_PADDING_SEC = 0.5 # Ignore saccades that occur near NaN eye tracking frames

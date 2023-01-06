@@ -50,16 +50,33 @@ class ParallelProcess():
     def job(self, job_fn, args, queue):
         try:
             result = job_fn(*args)
-            queue.put(result)
+            if queue is not None:
+                queue.put(result)
         except Exception:
             traceback.print_exc()
             print("Error doing job; exception above.")
 
 
-    def run(self, job_fn, args, output_handler):
+    def run(self, job_fn, args, output_handler, parallel=True):
         total_jobs = len(args)
-        print(f"Computer has {multiprocessing.cpu_count()} CPUs. Main thread is process {os.getpid()}.")
+        if parallel: print(f"Computer has {multiprocessing.cpu_count()} CPUs. Main thread is process {os.getpid()}.")
         
+        # Start jobs
+        start_time = time.time()
+        print(f"Waiting for {total_jobs} jobs to complete...")
+
+        def done_msg():
+            print(f"Finished {total_jobs} jobs in {timedelta(seconds=(time.time() - start_time))}")
+        
+        if not parallel:
+            num_done = 0
+            for a in args:
+                self.job(job_fn, a, None)
+                num_done += 1
+                print(f"Done with {num_done}/{total_jobs} jobs.")
+            done_msg()
+            return
+
         # Based off: https://stackoverflow.com/a/35134329
         original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         manager = multiprocessing.Manager()
@@ -74,14 +91,11 @@ class ParallelProcess():
             signal.signal(signal.SIGINT, original_sigint_handler)
             event_listener = pool.apply_async(self.queue_listener, args=(queue, total_jobs, output_handler))
 
-            # Start jobs
-            start_time = time.time()            
-            print(f"Waiting for {total_jobs} jobs to complete...")
             internal_job_args = [(job_fn, a, queue) for a in args]
             try:
                 result = pool.starmap_async(self.job, internal_job_args)
                 result = result.get()
-                print(f"Finished {total_jobs} jobs in {timedelta(seconds=(time.time() - start_time))}")
+                done_msg()
             except (KeyboardInterrupt, SystemExit):
                 print("Caught interrupt; terminating workers")
                 pool.terminate()

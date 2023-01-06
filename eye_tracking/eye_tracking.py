@@ -3,30 +3,29 @@ import pandas as pd
 import math
 
 
-"""
-Get the eye speed outlier threshold, defined as the maximum of 10 and three
-standard deviations above the mean eye speed in the entire experiment. All times
-where the eye exceeds this threshold will be flagged as the potential start of
-a saccade.
-"""
 def get_eye_speed_outlier_threshold(eye_speed):
+    """
+    Get the eye speed outlier threshold, defined as the maximum of 10 and three
+    standard deviations above the mean eye speed in the entire experiment. All times
+    where the eye exceeds this threshold will be flagged as the potential start of
+    a saccade.
+    """
     return max(10, eye_speed.mean() + 3*eye_speed.std())
 
 
-"""
-Get the ending eye speed outlier threshold, defined as one standard deviation
-above the mean eye speed in an entire experiment. This is used to define the
-ending frame of saccades.
-"""
 def get_eye_speed_outlier_threshold_end(eye_speed):
+    """
+    Get the ending eye speed outlier threshold, defined as one standard deviation
+    above the mean eye speed in an entire experiment. This is used to define the
+    ending frame of saccades.
+    """
     return eye_speed.mean() + 1*eye_speed.std()
 
-
-"""
-Find the absolute degrees moved between two (inclusive) frames and the direction
-of movement.
-"""
 def get_saccade_magnitude_direction(eye_data, start, end):
+    """
+    Find the absolute degrees moved between two (inclusive) frames and the direction
+    of movement.
+    """
     xs, xe = eye_data["x_pos_deg"].loc[start], eye_data["x_pos_deg"].loc[end]
     ys, ye = eye_data["y_pos_deg"].loc[start], eye_data["y_pos_deg"].loc[end]
     dx = xe - xs
@@ -45,25 +44,25 @@ def get_saccade_magnitude_direction(eye_data, start, end):
     
     return magnitude, angle
 
-"""
-Get the absolute degrees moved between two (inclusive) frames.
-Preferable to instead use get_saccade_magnitude_direction.
-"""
+
 def get_degrees_moved(eye_data, start, end):
+    """
+    Get the absolute degrees moved between two (inclusive) frames.
+    Preferable to instead use get_saccade_magnitude_direction.
+    """
     return get_saccade_magnitude_direction(eye_data, start, end)[0]
 
-"""
-Get the direction the eye moved between two (inclusive) frames.
-Preferable to instead use get_saccade_magnitude_direction.
-"""
 def get_direction_moved(eye_data, start, end):
+    """
+    Get the direction the eye moved between two (inclusive) frames.
+    Preferable to instead use get_saccade_magnitude_direction.
+    """
     return get_saccade_magnitude_direction(eye_data, start, end)[1]
 
-
-"""
-Find which stimulus was being shown at a particular frame.
-"""
 def get_stim_at_frame(stim_epoch, frame):
+    """
+    Find which stimulus was being shown at a particular frame.
+    """
     rows = stim_epoch[(stim_epoch["start"] <= frame) & (frame <= stim_epoch["end"])]
 
     if len(rows) > 0:

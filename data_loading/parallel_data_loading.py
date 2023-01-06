@@ -19,36 +19,37 @@ from eye_tracking.eye_tracking import get_saccades_from_gaze_traces
 
 # =========================================================================
 #                    TODO: INTEGRATE THIS INTO THE BOC
+# UPDATE: This is now being done in package_eye_data.py
 
 from eye_tracking.local_eye_data_repository import LocalEyeDataRepository
 import h5py
 import numpy as np
 import pandas as pd
 
-"""
-Get a pd.DataFrame of eye tracking data indexed by frames that are synced with 2P imaging
-(2P imaging length set in len_2p).
-"""
-def get_eye_tracking(session_id, len_2p):
+def get_eye_tracking(session_id, len_2p, boc):
+    """
+    Get a pd.DataFrame of eye tracking data indexed by frames that are synced with 2P imaging
+    (2P imaging length set in len_2p).
+    """
     # Determine which files to load
-    eye_data_path = r"/Users/chase/Desktop/MindScope/eye_data" # stores the time sync files
-    eye_data_repo = LocalEyeDataRepository.from_dir(eye_data_path, boc)
+    eye_data_repo = LocalEyeDataRepository.from_dir(EYE_DATA_PATH, boc)
     data = eye_data_repo.get_session_data(session_id)
 
     # Load and process the files
-    eye_tracking_file = os.path.join(eye_data_path, data["eye_tracking_file"])
-    time_sync_file = os.path.join(eye_data_path, data["time_sync_file"])
+    eye_tracking_file = os.path.join(EYE_DATA_PATH, data["eye_tracking_file"])
+    time_sync_file = os.path.join(EYE_DATA_PATH, data["time_sync_file"])
     eye_tracking = load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p)
 
     return eye_tracking
 
 
-"""
-Load the eye tracking data from eye tracking and time sync files, and synchronize the data points
-to the 2P imaging (the length of the 2P imaging is set in len_2p). Return a pd.DataFrame of
-synced eye tracking data.
-"""
+
 def load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p, debug=0):
+    """
+    Load the eye tracking data from eye tracking and time sync files, and synchronize the data points
+    to the 2P imaging (the length of the 2P imaging is set in len_2p). Return a pd.DataFrame of
+    synced eye tracking data.
+    """
     time_sync_key = "eye_tracking_alignment"
     pupil_area = pd.read_hdf(eye_tracking_file, "raw_pupil_areas").values
     eye_area = pd.read_hdf(eye_tracking_file, "raw_eye_areas").values
@@ -121,11 +122,11 @@ def load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p, debug=0):
 # =========================================================================
 
 
-"""
-Load information about a particular session from the Brain Observatory, along with saccades,
-and cache it in a more quickly-loadable file.
-"""
 def job(boc, ophys_exp):
+    """
+    Load information about a particular session from the Brain Observatory, along with saccades,
+    and cache it in a more quickly-loadable file.
+    """
     # Example ophys_exp:
     # {'id': 649409874, 'imaging_depth': 175, 'targeted_structure': 'VISpm', 'cre_line': 'Vip-IRES-Cre', 'reporter_line': 'Ai148(TIT2L-GC6f-ICL-tTA2)', 'acquisition_age_days': 100, 'experiment_container_id': 646959440, 'session_type': 'three_session_A', 'donor_name': '350249', 'specimen_name': 'Vip-IRES-Cre;Ai148-350249', 'fail_eye_tracking': False}
 
@@ -142,7 +143,7 @@ def job(boc, ophys_exp):
         cre = match_cre_line(ophys_exp)
 
         # Eye tracking
-        eye_tracking = get_eye_tracking(session_id, len_2p=flu.shape[1]) # TODO: Change to new API when ready
+        eye_tracking = get_eye_tracking(session_id, len_2p=flu.shape[1], boc=boc) # TODO: Change to new API when ready
         
         # Experiment start and end times
         stim_epoch = ophys_experiment_data.get_stimulus_epoch_table()
