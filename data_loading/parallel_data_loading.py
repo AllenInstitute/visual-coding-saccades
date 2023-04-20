@@ -14,7 +14,7 @@ from allensdk.brain_observatory.brain_observatory_exceptions import EpochSeparat
 
 from saccade_config import *
 from experiment.cre_line import match_cre_line
-from helpers.parallel_process import ParallelProcess
+from helpers.parallel_process_old import ParallelProcess
 from eye_tracking.eye_tracking import get_saccades_from_gaze_traces
 
 # =========================================================================
@@ -201,7 +201,7 @@ def job(boc, ophys_exp):
 Runs the above data-loading process in parallel.
 """
 if __name__ == "__main__":
-    process = ParallelProcess(CELL_DATA_SAVE_DIR)
+    process = ParallelProcessOld(CELL_DATA_SAVE_DIR)
 
     def output_handler(result):
         if result is None:

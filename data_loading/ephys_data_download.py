@@ -11,7 +11,7 @@ import traceback
 
 import pandas as pd
 
-from helpers.parallel_process import ParallelProcess
+from helpers.parallel_process_old import ParallelProcess
 
 # https://github.com/AllenInstitute/AllenSDK/issues/1436#issuecomment-610082420
 from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
