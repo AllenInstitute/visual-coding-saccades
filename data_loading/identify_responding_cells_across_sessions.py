@@ -44,7 +44,7 @@ def get_cell_p_values(datas, cell_indices, saccades, saccade_responses, slice_af
                     valid_frames.extend(list(range(start, end)))
         else:
             start, end = data["start_end"]
-            valid_frames = list(start+pad, end-pad)
+            valid_frames = list(range(start+pad, end-pad))
         
         data_valid_frames.append(valid_frames)
 

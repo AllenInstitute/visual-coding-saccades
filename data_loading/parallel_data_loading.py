@@ -15,7 +15,7 @@ from allensdk.brain_observatory.brain_observatory_exceptions import EpochSeparat
 from saccade_config import *
 from experiment.cre_line import match_cre_line
 from helpers.parallel_process_old import ParallelProcess
-from eye_tracking.eye_tracking import get_saccades_from_gaze_traces
+from eye_tracking.eye_tracking import get_saccades_from_gaze_traces, get_eye_speed
 
 # =========================================================================
 #                    TODO: INTEGRATE THIS INTO THE BOC
@@ -102,17 +102,7 @@ def load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p, debug=0):
 
     # Calculate rate of change of position using central difference approximation of f'(x)
     # f'(x) = [f(x+h) - f(x-h)] / (2h) = [f(x+h) - f(x-h)] / (2/frame_rate) = [f(x+h) - f(x-h)] * frame_rate/2
-    eye_tracking["speed_x"] = np.nan
-    eye_tracking["speed_y"] = np.nan
-    eye_tracking["speed"] = np.nan
-
-    for i in eye_tracking.index:
-        if i-1 in eye_tracking.index and i+1 in eye_tracking.index:
-            d_x_deg = (eye_tracking.at[i+1, "x_pos_deg"] - eye_tracking.at[i-1, "x_pos_deg"]) * FRAME_RATE/2
-            d_y_deg = (eye_tracking.at[i+1, "y_pos_deg"] - eye_tracking.at[i-1, "y_pos_deg"]) * FRAME_RATE/2
-            eye_tracking.at[i, "speed_x"] = d_x_deg
-            eye_tracking.at[i, "speed_y"] = d_y_deg
-            eye_tracking.at[i, "speed"] = np.sqrt(d_x_deg**2 + d_y_deg**2)
+    eye_tracking["speed"] = get_eye_speed(eye_tracking, x_deg_col="x_pos_deg", y_deg_col="y_pos_deg", frame_rate=30)
 
     # Set the index (but keep "frame" as a column)
     eye_tracking = eye_tracking.set_index("frame", drop=False)
@@ -201,7 +191,7 @@ def job(boc, ophys_exp):
 Runs the above data-loading process in parallel.
 """
 if __name__ == "__main__":
-    process = ParallelProcessOld(CELL_DATA_SAVE_DIR)
+    process = ParallelProcess(CELL_DATA_SAVE_DIR)
 
     def output_handler(result):
         if result is None:
