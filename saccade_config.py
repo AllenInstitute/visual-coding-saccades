@@ -9,18 +9,22 @@ BRAIN_OBSERVATORY_CACHE_MANIFEST_FILE = path.join(BRAIN_OBSERVATORY_CACHE_DRIVE_
 # Where the eye tracking data files are stored locally
 EYE_DATA_PATH = r"/Users/chase/Desktop/MindScope/eye_data"
 
+DATA_DIR = "/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data"
+
 # Where the experiment data (loaded from parallel_data_loading.py) will be saved
-CELL_DATA_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data"
+CELL_DATA_SAVE_DIR = f"{DATA_DIR}/cell_data"
 
 # The directory of data already loaded from parallel_data_loading.py
-# LOADED_CELL_DATA_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data_2022-05-24_08-40-28"
-LOADED_CELL_DATA_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/cell_data_2022-08-07_18-04-51"
+LOADED_CELL_DATA_DIR = f"{DATA_DIR}/cell_data_v2"
 
 # Where saccade-classified cell data will be saved
-CLASSIFIED_CELLS_SAVE_DIR = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/classified_cells_boot"
+CLASSIFIED_CELLS_SAVE_DIR = f"{DATA_DIR}/classified_cells"
 
 # CSV file of saccade-classified cells
-LOADED_CLASSIFIED_CELLS_CSV = r"/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data/classified_cells_boot_2022-05-30_17-41-16/cells.csv"
+LOADED_CLASSIFIED_CELLS_CSV = f"{DATA_DIR}/classified_cells_v2/cells.csv"
+
+# CSV file of saccade-classified cells
+LOADED_CLASSIFIED_CELLS_SPONTANEOUS_CSV = f"{DATA_DIR}/classified_cells_v1/cells-spontaneous.csv"
 
 # Base directory for saved figures
 # FIGURE_BASE_DIR = r"/Users/chase/Desktop/saccade_paper_figures"

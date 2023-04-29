@@ -141,10 +141,24 @@ def __get_valid_saccades_from_gaze(gaze_data, saccades, x_deg_col="x_deg", y_deg
     return valid_saccades
 
 
+def arclength(azi1, alt1, azi2, alt2, degrees=True, method="gs"):
+    # https://en.wikipedia.org/wiki/Great-circle_distance
+    from numpy import sin, cos
+    if degrees:
+        azi1, alt1, azi2, alt2 = np.radians((azi1, alt1, azi2, alt2))
+
+    delta_alt = np.abs(alt2 - alt1)
+
+    if method == "gs": # Great-circle distance
+        angle = np.arccos(sin(azi1)*sin(azi2) + cos(azi1)*cos(azi2)*cos(delta_alt))
+    elif method == "hs":
+        pass
+    
+    return np.degrees(angle) if degrees else angle
+
+
 def get_eye_speed(gaze_data, x_deg_col="x_deg", y_deg_col="y_deg", frame_rate=None):
     # Calculate rate of change of position using central difference approximation of f'(x)
-    speed_x = gaze_data.apply(lambda row: np.nan, axis=1)
-    speed_y = gaze_data.apply(lambda row: np.nan, axis=1)
     speed = gaze_data.apply(lambda row: np.nan, axis=1)
 
     # [f(x+h) - f(x-h)] / (2h)
@@ -158,21 +172,22 @@ def get_eye_speed(gaze_data, x_deg_col="x_deg", y_deg_col="y_deg", frame_rate=No
             # There is another data point before and after this index
             i1 = indices[i+1]
             i0 = indices[i-1]
-            dx = gaze_data.at[i1, x_deg_col] - gaze_data.at[i0, x_deg_col]
-            dy = gaze_data.at[i1, y_deg_col] - gaze_data.at[i0, y_deg_col]
+            x0, x1 = gaze_data.at[i0, x_deg_col], gaze_data.at[i1, x_deg_col]
+            y0, y1 = gaze_data.at[i0, y_deg_col], gaze_data.at[i1, y_deg_col]
             dt = 1/frame_rate if frame_rate is not None else (i1 - i0)
-            x_speed = dx / (2*dt)
-            y_speed = dy / (2*dt)
-            speed_x.iat[i] = x_speed
-            speed_y.iat[i] = y_speed
-            speed.iat[i] = np.sqrt(x_speed**2 + y_speed**2)
+            # x_speed = dx / (2*dt)
+            # y_speed = dy / (2*dt)
+            # speed_x.iat[i] = x_speed
+            # speed_y.iat[i] = y_speed
+            # speed.iat[i] = np.sqrt(x_speed**2 + y_speed**2)
+            speed.iat[i] = arclength(x0, y0, x1, y1, degrees=True) / (2*dt)
 
-    return speed_x, speed_y, speed
+    return speed
 
 
 def get_saccades_from_gaze_traces(gaze_data, start, end, x_deg_col="x_deg", y_deg_col="y_deg", speed_col=None, nan_padding_sec=0.5, frame_rate=None, noise_padding_sec=0.3, noise_std_thresh=3, include_peak_frame=False):
     if speed_col is None:
-        speed_x, speed_y, eye_speed = get_eye_speed(gaze_data, x_deg_col=x_deg_col, y_deg_col=y_deg_col, frame_rate=frame_rate)
+        eye_speed = get_eye_speed(gaze_data, x_deg_col=x_deg_col, y_deg_col=y_deg_col, frame_rate=frame_rate)
     else:
         eye_speed = gaze_data[speed_col]
 

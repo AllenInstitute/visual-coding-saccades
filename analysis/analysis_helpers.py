@@ -12,6 +12,123 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from saccade_config import *
 
+
+LABEL_NONE = "No response"
+LABEL_ENHANCED = "Enhanced: No DS"
+LABEL_SUPPRESSED = "Suppressed"
+LABEL_NASAL = "Enhanced: Nasal"
+LABEL_TEMPORAL = "Enhanced: Temporal"
+
+SR_LABELS = [
+    (LABEL_NONE, "gray"),
+    (LABEL_SUPPRESSED, "purple"),
+    (LABEL_ENHANCED, "green"),
+    (LABEL_NASAL, "b"),
+    (LABEL_TEMPORAL, "r"),
+]
+
+SR_LABELS_ABBREV = {
+    "No response": "Not SR",
+    "Enhanced: No DS": "No DS",
+    "Enhanced: Nasal": "N",
+    "Enhanced: Temporal": "T",
+}
+
+def add_cell_df_columns(cells):
+    from statsmodels.sandbox.stats.multicomp import multipletests
+
+    cells["depth_trunc"] = 100 * (cells["depth"]/100).astype(int)
+    cells.at[cells["cre_line"] == "Scnn1a-Tg3-Cre; Camk2a-tTA; Ai93(TITL-GCaMP6f)", "depth_trunc"] = 200
+    cells.at[cells["cre_line"] == "Nr5a1-Cre; Camk2a-tTA; Ai93(TITL-GCaMP6f)", "depth_trunc"] = 200
+    cells.at[cells["cre_line"] == "Fezf2-CreER; Ai148(TIT2L-GC6f-ICL-tTA2)", "depth_trunc"] = 300
+    cells.at[cells["depth_trunc"] == 400, "depth_trunc"] = 300
+
+    depth_to_layer = {
+        100: "2/3",
+        200: "4",
+        300: "5",
+        500: "6",
+    }
+
+    cells["cortical_layer"] = cells["depth_trunc"].apply(lambda depth_trunc: depth_to_layer[depth_trunc])
+
+
+
+    miura_thresh = 5e-2 # 0.05
+    dir_thresh = 0.05
+
+    response_classification = cells["response_classification"]
+    cells["is_sr"] = (response_classification.abs() == 1)
+    is_ds = (cells["ranksum_p_by_direction"] < dir_thresh)
+    is_sr_ds = (cells["is_sr"]) & is_ds
+    cells["is_sr_ds"] = is_sr_ds
+    method = "fdr_bh"
+    alpha = 0.1
+    cells["is_sr_miura"] = (
+        (multipletests(cells["wilcoxon_signed_rank_p"], alpha=alpha, method=method)[1] < 0.05)
+        | (multipletests(cells["ranksum_p_by_direction"], alpha=alpha, method=method)[1] < 0.05)
+    )
+    cells["is_sr_ds_miura"] = cells["is_sr_miura"] & is_ds
+
+
+    # Compute preferred direction
+    larger_R_response = cells["mean_right_response"] > cells["mean_left_response"]
+    cells["preferred_direction"] = 0
+
+    # pref_dir_temporal = (
+    #     ((cells["response_classification"] == 1) & larger_R_response)
+    #      | ((cells["response_classification"] == -1) & ~larger_R_response)
+    # )
+
+    # pref_dir_nasal = (
+    #     ((cells["response_classification"] == 1) & ~larger_R_response)
+    #      | ((cells["response_classification"] == -1) & larger_R_response)
+    # )
+
+    # ONLY CONSIDER ENHANCED RESPONSES
+    pref_dir_temporal = (cells["response_classification"] == 1) & larger_R_response
+    pref_dir_nasal = (cells["response_classification"] == 1) & ~larger_R_response
+
+    cells.loc[is_sr_ds & pref_dir_temporal, "preferred_direction"] = 1
+    cells.loc[is_sr_ds & pref_dir_nasal, "preferred_direction"] = -1
+
+    cells.loc[cells["is_sr_miura"] & is_ds & pref_dir_temporal, "preferred_direction_miura"] = 1
+    cells.loc[cells["is_sr_miura"] & is_ds & pref_dir_nasal, "preferred_direction_miura"] = -1
+
+    cells["sr_label"] = LABEL_NONE
+    cells.loc[(cells["response_classification"] == 1) & ~(cells["is_sr_ds"]), "sr_label"] = LABEL_ENHANCED
+    cells.loc[(cells["response_classification"] == -1), "sr_label"] = LABEL_SUPPRESSED
+    cells.loc[(cells["is_sr"]) & (cells["preferred_direction"] == -1), "sr_label"] = LABEL_NASAL
+    cells.loc[(cells["is_sr"]) & (cells["preferred_direction"] == 1), "sr_label"] = LABEL_TEMPORAL
+
+    cells["sr_label_miura"] = LABEL_NONE
+    cells.loc[(cells["is_sr_miura"]) & ~(cells["is_sr_ds_miura"]), "sr_label_miura"] = "SR"
+    cells.loc[(cells["is_sr_miura"]) & (cells["preferred_direction_miura"] == -1), "sr_label_miura"] = LABEL_NASAL
+    cells.loc[(cells["is_sr_miura"]) & (cells["preferred_direction_miura"] == 1), "sr_label_miura"] = LABEL_TEMPORAL
+
+    # print(cells["sr_label"].value_counts())
+    # print()
+    # print(cells["sr_label_miura"].value_counts())
+
+
+
+def load_metrics(cells=None):
+    metrics = load_additional_data("metrics.csv")
+    metrics.drop([c for c in metrics.columns if "Unnamed" in c], axis=1, inplace=True)
+
+    dsi_df = load_additional_data("dsi.csv")
+    metrics = metrics.merge(dsi_df[["cell_specimen_id", "DSI_pref_tf"]], on="cell_specimen_id")
+    metrics.set_index("cell_specimen_id", inplace=True)
+    # metrics.head()
+
+    if cells is None:
+        return metrics
+    else:
+        cells_and_metrics = cells.join(metrics, how="inner")
+        print(f"{len(cells_and_metrics):,}/{len(cells):,} cells have associated metrics")
+        return metrics, cells_and_metrics
+
+
 def load_data_by_session_id(session_id):
     """
     Load a cached experiment data by session ID.
@@ -88,7 +205,7 @@ def set_major_minor_ticks(ax, window_radius, minor_tick_step=100, major_tick_ste
     ax.tick_params(axis="x", which="minor", direction="out", length=2, width=1, color="black")
 
 
-def heatmap_log_proba_plot(p_matrix, heatmap_labels=None, ticklabels=None, title="Probabilities", titlefontsize=18, xticklabelrotation=90, cbar_label="", ax=None, ticklabelfontsize=16, figsize=(10, 8), significance_thresh=0.05, log=True, correct_comparisons=True, cbartickfontsize=16, is_inset=False):
+def heatmap_log_proba_plot(p_matrix, heatmap_labels=None, ticklabels=None, yticklabels=None, xticklabels=None, title="Probabilities", titlefontsize=18, xticklabelrotation=90, show_cbar=True, cbar_label="", cbar_label_fontsize=16, ax=None, ticklabelfontsize=16, figsize=(10, 8), significance_thresh=0.05, log=True, correct_comparisons=True, cbartickfontsize=16, is_inset=False, cbar_ax=None):
     """
     Shorthand to create a probability heatmap matrix.
     heatmap_labels can be used to annotate cells in the matrix.
@@ -114,7 +231,7 @@ def heatmap_log_proba_plot(p_matrix, heatmap_labels=None, ticklabels=None, title
             if b == 0:
                 label = f"{a}"
             else:
-                label = f"{a} $\\times 10^{'{'}{b}{'}'}$"
+                label = f"{a}$\\times 10^{'{'}{b}{'}'}$"
         cbar_ticklabels.append(label)
 
     if ax is None:
@@ -123,33 +240,43 @@ def heatmap_log_proba_plot(p_matrix, heatmap_labels=None, ticklabels=None, title
         fig, ax = ax.get_figure(), ax
 
     logmatrix = np.log10(p_matrix)
-    cbar = dict(cbar=False) if is_inset else dict(cbar=True, cbar_kws=dict(ticks=cbar_ticks))
+    cbar = dict(cbar=False) if is_inset or not show_cbar else dict(cbar=True, cbar_kws=dict(ticks=cbar_ticks), cbar_ax=cbar_ax)
     sns.heatmap(
-        logmatrix, annot=heatmap_labels, fmt="", annot_kws=dict(fontsize=14),
+        logmatrix, annot=heatmap_labels, fmt="", annot_kws=dict(fontsize=14, color="black"),
         ax=ax, linewidths=0.5, square=True, cmap="seismic_r",
-        center=centervalue, vmin=centervalue-3, vmax=centervalue+3, **cbar
+        center=centervalue, vmin=centervalue-2.5, vmax=centervalue+2.5, **cbar
     )
 
-    if p_matrix.shape[1] == len(ticklabels):
-        ax.set_xticklabels(ticklabels, fontsize=ticklabelfontsize, rotation=xticklabelrotation)
-    else:
-        ax.set_xticklabels([])
-
-    if p_matrix.shape[0] == len(ticklabels):
-        ax.set_yticklabels(ticklabels, fontsize=ticklabelfontsize, rotation=0)
-    else:
-        ax.set_yticklabels([])
-
-    if is_inset:
-        cbar_ax = inset_axes(ax, width="5%", height="100%", loc="lower left", bbox_to_anchor=(1.05, 0, 1, 1), bbox_transform=ax.transAxes, borderpad=0)
-        cbar = plt.colorbar(ax.collections[0], cax=cbar_ax)
-    else:
-        cbar = ax.collections[0].colorbar
-    cbar.set_ticks(cbar_ticks)
-    cbar.set_ticklabels(cbar_ticklabels)
-    cbar.ax.tick_params(labelsize=cbartickfontsize)
-    cbar.set_label(cbar_label, fontsize=16) # , rotation=270, va="bottom"
     ax.set_title(title, fontsize=titlefontsize)
+
+    if xticklabels is None:
+        xticklabels = ticklabels
+    if xticklabels is not None:
+        ax.set_xticklabels(xticklabels, fontsize=ticklabelfontsize, rotation=xticklabelrotation)
+
+    if yticklabels is None:
+        yticklabels = ticklabels
+    if yticklabels is not None:
+        ax.set_yticklabels(yticklabels, fontsize=ticklabelfontsize, rotation=0)
+
+    if show_cbar:
+        if is_inset:
+            if cbar_ax is None:
+                cbar_ax = inset_axes(ax, width="5%", height="90%", loc="lower left", bbox_to_anchor=(1.05, 0, 1, 1), bbox_transform=ax.transAxes, borderpad=0)
+            
+            if cbar_ax is False: # if cbar_ax is False, no cbar
+                cbar = None
+            else:
+                cbar = plt.colorbar(ax.collections[0], cax=cbar_ax)
+        else:
+            cbar = ax.collections[0].colorbar
+        
+        if cbar is not None:
+            cbar.set_ticks(cbar_ticks)
+            cbar.set_ticklabels(cbar_ticklabels)
+            cbar.ax.tick_params(labelsize=cbartickfontsize)
+            cbar.set_label(cbar_label, fontsize=cbar_label_fontsize) # , rotation=270, va="bottom"
+
     return fig, ax
 
 

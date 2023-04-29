@@ -52,10 +52,11 @@ python data_loading/parallel_data_loading.py
 
 (Note this is done from the main directory, i.e., `visual-coding-saccades`.)
 
-**Loading neural activity data (optional).** Now that this session data has been cached, you can optionally re-run a Python script to classify cells as saccade-responsive. This is a very computationally-expensive operation; only run if you change relevant parameters.
+**Loading neural activity data (optional).** Now that this session data has been cached, you can optionally re-run a Python script to classify cells as saccade-responsive. This is a very computationally-expensive operation; only run if you change relevant parameters; it takes ~2 hours on my 10-core laptop.
 
 ```bash
-python data_loading/identify_responding_cells_across_sessions.py
+cd data_loading
+python identify_responding_cells_across_sessions.py
 ```
 
 ### Data Analysis
