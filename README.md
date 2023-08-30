@@ -1,10 +1,10 @@
 # Allen Institute Visual Coding Dataset Saccade Analysis
 *Primary Author: [Chase King](https://chaseking.me)*
 
-## Development To-Do:
-1. [ ] Integrate eye tracking into the AllenSDK.
-2. [ ] Delete `eye_tracking/local_eye_data_repository.py` (part of legacy eye tracking).
-3. [ ] Test `identify_responding_cells_across_sessions.py`.
+This is the code used for the paper:
+Saccade-responsive visual cortical neurons do not exhibit distinct visual response properties
+Chase W. King, Peter Ledochowitsch, Michael A. Buice and Saskia E. J. de Vries
+eNeuro 17 August 2023, ENEURO.0051-23.2023; DOI: https://doi.org/10.1523/ENEURO.0051-23.2023
 
 ## Installation
 This project was developed in Python 3.7.10 using [AllenSDK](https://allensdk.readthedocs.io/en/latest/) version 2.12.3. [Conda](https://conda.io/) will set up a virtual environment with the exact version of Python used for development along with all the dependencies needed to run the code.
@@ -61,3 +61,6 @@ python identify_responding_cells_across_sessions.py
 
 ### Data Analysis
 in the [`analysis`](/analysis) folder, you will find various notebooks that can be used to perform the analyses and generate the figures in the paper. Navigate to this folder for more information.
+
+### Support Policy
+We are not currently supporting this code, but simply releasing it to the community AS IS but are not able to provide any guarantees of support. The community is welcome to submit issues, but you should not expect an active response.
