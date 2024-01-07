@@ -9,6 +9,10 @@ import gc
 import time
 import traceback
 
+import h5py
+import numpy as np
+import pandas as pd
+
 from allensdk.core.brain_observatory_cache import BrainObservatoryCache
 from allensdk.brain_observatory.brain_observatory_exceptions import EpochSeparationException
 
@@ -17,87 +21,23 @@ from experiment.cre_line import match_cre_line
 from helpers.parallel_process_old import ParallelProcess
 from eye_tracking.eye_tracking import get_saccades_from_gaze_traces, get_eye_speed
 
-# =========================================================================
-#                    TODO: INTEGRATE THIS INTO THE BOC
-# UPDATE: This is now being done in package_eye_data.py
 
-from eye_tracking.local_eye_data_repository import LocalEyeDataRepository
-import h5py
-import numpy as np
-import pandas as pd
-
-def get_eye_tracking(session_id, len_2p, boc):
-    """
-    Get a pd.DataFrame of eye tracking data indexed by frames that are synced with 2P imaging
-    (2P imaging length set in len_2p).
-    """
-    # Determine which files to load
-    eye_data_repo = LocalEyeDataRepository.from_dir(EYE_DATA_PATH, boc)
-    data = eye_data_repo.get_session_data(session_id)
-
-    # Load and process the files
-    eye_tracking_file = os.path.join(EYE_DATA_PATH, data["eye_tracking_file"])
-    time_sync_file = os.path.join(EYE_DATA_PATH, data["time_sync_file"])
-    eye_tracking = load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p)
-
-    return eye_tracking
-
-
-
-def load_eye_tracking_data(eye_tracking_file, time_sync_file, len_2p, debug=0):
+def get_eye_tracking(session_id, boc: BrainObservatoryCache):
     """
     Load the eye tracking data from eye tracking and time sync files, and synchronize the data points
     to the 2P imaging (the length of the 2P imaging is set in len_2p). Return a pd.DataFrame of
     synced eye tracking data.
     """
-    time_sync_key = "eye_tracking_alignment"
-    pupil_area = pd.read_hdf(eye_tracking_file, "raw_pupil_areas").values
-    eye_area = pd.read_hdf(eye_tracking_file, "raw_eye_areas").values
-    pos = pd.read_hdf(eye_tracking_file, "new_screen_coordinates")
-    pos_deg = pd.read_hdf(eye_tracking_file, "raw_screen_coordinates_spherical")
-
-    if debug > 0:
-        with h5py.File(eye_tracking_file, "r") as file:
-            print("Eye tracking keys:", [key for key in file.keys()])
-    
-    # Temporal alignment
-    with h5py.File(time_sync_file, "r") as file:
-        if debug > 0:
-            print("Temporal alignment keys:", [key for key in file.keys()])
-
-        frames = file[time_sync_key][()]
-
-        # Create mapping from eye frame --> 2P frame (or -1 if none exists)
-        eye_frame_to_2p_frame = -np.ones(int(frames.max()+1), dtype=np.int)
-        for i, frame in enumerate(frames):
-            eye_frame_to_2p_frame[int(frame)] = i # The eye frame is frame, the 2P frame is its index in the list
-
-    frame_sync = np.arange(len_2p) # We will have a frame for every 2P frame
-
-    def sync(original):
-        synced = np.empty(len_2p, dtype=original.dtype)
-        synced[:] = np.nan
-        for frame_eye, val in enumerate(original):
-            frame_2p = eye_frame_to_2p_frame[frame_eye] if frame_eye < len(eye_frame_to_2p_frame) else -1
-            if 0 <= frame_2p < len(synced):
-                synced[frame_2p] = val
-        return synced
-
-    # Sync all traces to 2P frame times
-    eye_area_sync = sync(eye_area)
-    pupil_area_sync = sync(pupil_area)
-    pupil_area_sync = sync(pupil_area)
-    x_pos_sync = sync(pos_deg.x_pos_deg.values)
-    y_pos_sync = sync(pos_deg.y_pos_deg.values)
+    eye_tracking_arr = boc.get_eye_tracking(session_id)
 
     # Build the data frame
     columns = ["frame", "eye_area", "pupil_area", "x_pos_deg", "y_pos_deg"]
     eye_tracking = pd.DataFrame(data={
-        "frame": frame_sync,
-        "eye_area": eye_area_sync,
-        "pupil_area": pupil_area_sync,
-        "x_pos_deg": x_pos_sync,
-        "y_pos_deg": y_pos_sync
+        "frame": eye_tracking_arr[:, 0].astype(int),
+        "eye_area": eye_tracking_arr[:, 1],
+        "pupil_area": eye_tracking_arr[:, 2],
+        "x_pos_deg": eye_tracking_arr[:, 3],
+        "y_pos_deg": eye_tracking_arr[:, 4]
     }, columns=columns)
 
     # Calculate rate of change of position using central difference approximation of f'(x)
@@ -133,7 +73,7 @@ def job(boc, ophys_exp):
         cre = match_cre_line(ophys_exp)
 
         # Eye tracking
-        eye_tracking = get_eye_tracking(session_id, len_2p=flu.shape[1], boc=boc) # TODO: Change to new API when ready
+        eye_tracking = get_eye_tracking(session_id, boc=boc)
         
         # Experiment start and end times
         stim_epoch = ophys_experiment_data.get_stimulus_epoch_table()
@@ -206,7 +146,13 @@ if __name__ == "__main__":
     args = []
 
     for ophys_exp in boc.get_ophys_experiments(require_eye_tracking=True):
+        if ophys_exp["fail_eye_tracking"]:
+            continue
+
+        # NOTE: If you don't care about certain experiments (e.g., only certain cre line), then add more checks here to ignore
+        # otherwise it will download all sessions, which can take a lot of space
+
         args.append((boc, ophys_exp))
 
     print(f"There are {len(args)} total sessions to process.")
-    process.run(job, args, output_handler)
+    process.run(job, args, output_handler, parallel=True)

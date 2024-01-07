@@ -8,7 +8,6 @@ BRAIN_OBSERVATORY_CACHE_MANIFEST_FILE = path.join(BRAIN_OBSERVATORY_CACHE_DRIVE_
 
 # Where the eye tracking data files are stored locally
 EYE_DATA_PATH = r"/Users/chase/Desktop/MindScope/eye_data"
-
 DATA_DIR = "/Users/chase/Desktop/MindScope/Documents/visual-coding-saccades/data"
 
 # Where the experiment data (loaded from parallel_data_loading.py) will be saved
